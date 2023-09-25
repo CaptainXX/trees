@@ -5,6 +5,18 @@
 
 namespace ds_practice {
 
+#define CREATE_OPERATORS_FOR_TYPE(TYPE) \
+    inline bool operator<(const TYPE& rhs) { return this->data_ < rhs.data_; } \
+    inline bool operator>(const TYPE& rhs) { return this->data_ > rhs.data_; } \
+    inline bool operator==(const TYPE& rhs) { return this->data_ == rhs.data_; } \
+    inline bool operator<(const T& rhs) { return this->data_ < rhs; } \
+    inline bool operator>(const T& rhs) { return this->data_ > rhs; } \
+    inline bool operator==(const T& rhs) { return this->data_ == rhs; } \
+    friend std::ostream& operator<<(std::ostream& os, const TYPE& node) { \
+        os << node.data_; \
+        return os; \
+    }
+
 template<typename T>
 struct TreeNodeBase {
     T data_;
@@ -21,18 +33,7 @@ struct TreeNodeBase {
                      right_(nullptr),
                      parent_(nullptr) {}
 
-    inline bool operator<(const TreeNodeBase& rhs) { return this->data_ < rhs.data_; }
-    inline bool operator>(const TreeNodeBase& rhs) { return this->data_ > rhs.data_; }
-    inline bool operator==(const TreeNodeBase& rhs) { return this->data_ == rhs.data_; }
-    inline bool operator<(const T& rhs) { return this->data_ < rhs; }
-    inline bool operator>(const T& rhs) { return this->data_ > rhs; }
-    inline bool operator==(const T& rhs) { return this->data_ == rhs; }
-    
-    friend std::ostream& operator<<(std::ostream& os, const TreeNodeBase& node) {
-        os << node.data_;
-        return os;
-    }
-
+    CREATE_OPERATORS_FOR_TYPE(TreeNodeBase);
 };
 
 template<typename T, typename TreeNode = TreeNodeBase<T>>
@@ -230,21 +231,30 @@ bool BinarySearchTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
 // ------------ Red Black Tree -------------
 
 template<typename T>
-struct RBTreeNode : public TreeNodeBase<T>{
+struct RBTreeNode {
     enum class Color {
         Red = 0,
         Black,
     };
 
     Color color_;
+    T data_;
+    RBTreeNode *left_;
+    RBTreeNode *right_;
+    RBTreeNode *parent_;
 
-    RBTreeNode(): color_(Color::Red) {}
-    RBTreeNode(T data): color_(Color::Red), TreeNodeBase<T>(data) {}
-    RBTreeNode(T data, Color color): color_(color), TreeNodeBase<T>(data) {}
+    RBTreeNode(): color_(Color::Red), data_(),
+                  left_(nullptr), right_(nullptr),
+                  parent_(nullptr) {}
+    RBTreeNode(T data): color_(Color::Red), data_(data),
+                        left_(nullptr), right_(nullptr),
+                        parent_(nullptr) {}
+    RBTreeNode(T data, Color color): color_(color), data_(data),
+                        left_(nullptr), right_(nullptr),
+                        parent_(nullptr) {}
 
+    CREATE_OPERATORS_FOR_TYPE(RBTreeNode);
 };
-
-
 
 template<typename T>
 class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
