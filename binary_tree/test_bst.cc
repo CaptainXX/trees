@@ -1,9 +1,227 @@
 #include <vector>
+#include <unordered_set>
 #include <iostream>
 
-#include "bst.hpp"
+#include <gtest/gtest.h>
 
-namespace ds_practice {
+#include "bt.hpp"
+
+class BstTest : public ::testing::Test {
+ protected:
+    void SetUp() override {
+        data = std::move(std::vector<int> {49, 49, 45, 49, 25, 65, 41, 13, 31, 58});
+        n_data = data.size();
+    }
+
+    std::vector<int> data;
+    int n_data;
+
+};
+
+TEST_F(BstTest, BSTreePrint) {
+    binary_tree::BinarySearchTree<int> bst;
+    for (auto x : data) {
+        bst.Insert(x);
+    }
+
+    std::cout << bst << std::endl;
+}
+
+TEST_F(BstTest, BSTreeInsert) {
+    ASSERT_GE(n_data, 10);
+    using Node = binary_tree::BinarySearchTree<int>::TreeNodeType;
+    binary_tree::BinarySearchTree<int> bst;
+    Node * ins = nullptr;
+
+    // Insert 49
+    ins = bst.Insert(data[0]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 49);
+
+    // Insert 49
+    ins = bst.Insert(data[1]);
+    EXPECT_EQ(ins, nullptr);
+
+    // Insert 45
+    ins = bst.Insert(data[2]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 45);
+    
+    // Insert 49
+    ins = bst.Insert(data[3]);
+    EXPECT_EQ(ins, nullptr);
+    
+    // Insert 25
+    ins = bst.Insert(data[4]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 25);
+
+    // Insert 65
+    ins = bst.Insert(data[5]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 65);
+
+    // Insert 41
+    ins = bst.Insert(data[6]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 41);
+
+    // Insert 13
+    ins = bst.Insert(data[7]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 13);
+
+    // Insert 31
+    ins = bst.Insert(data[8]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 31);
+
+    // Insert 58
+    ins = bst.Insert(data[9]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 58);
+}
+
+TEST_F(BstTest, BSTreeSearch) {
+    using Node = binary_tree::BinarySearchTree<int>::TreeNodeType;
+    binary_tree::BinarySearchTree<int> bst;
+    Node *res = nullptr;
+
+    for (auto x : data) {
+        bst.Insert(x);
+    }
+
+    res = bst.Search(49);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 49);
+
+    res = bst.Search(45);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 45);
+
+    res = bst.Search(25);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 25);
+
+    res = bst.Search(65);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 65);
+
+    res = bst.Search(41);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 41);
+
+    res = bst.Search(13);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 13);
+
+    res = bst.Search(31);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 31);
+
+    res = bst.Search(58);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 58);
+
+    res = bst.Search(100);
+    EXPECT_EQ(res, nullptr);
+
+}
+
+TEST_F(BstTest, BSTreeDelete) {
+    ASSERT_GE(n_data, 10);
+    using Node = binary_tree::BinarySearchTree<int>::TreeNodeType;
+    binary_tree::BinarySearchTree<int> bst;
+    std::unordered_set<int> deleted_data;
+    bool res = false;
+
+    for (auto x : data) {
+        bst.Insert(x);
+    }
+
+    res = bst.Delete(data[0]);
+    deleted_data.insert(data[0]);
+    EXPECT_TRUE(res);
+
+    res = bst.Delete(data[0]);
+    EXPECT_FALSE(res);
+
+    for (int i = 1; i < n_data; ++i) {
+        res = bst.Delete(data[i]);
+        if (deleted_data.find(data[i]) == deleted_data.end()) {
+            EXPECT_TRUE(res);
+            deleted_data.insert(data[i]);
+        } else {
+            EXPECT_FALSE(res);
+        }
+    }
+}
+
+TEST_F(BstTest, RBTreePrint) {
+    binary_tree::RBTree<int> rbt;
+    for (auto x : data) {
+        auto ret = rbt.Insert(x);
+    }
+
+    std::cout << rbt << std::endl;
+}
+
+TEST_F(BstTest, RBTreeInsert) {
+    ASSERT_GE(n_data, 10);
+    using Node = binary_tree::RBTree<int>::TreeNodeType;
+    binary_tree::RBTree<int> rbt;
+    Node * ins = nullptr;
+
+    // Insert 49
+    ins = rbt.Insert(data[0]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 49);
+
+    // Insert 49
+    ins = rbt.Insert(data[1]);
+    EXPECT_EQ(ins, nullptr);
+
+    // Insert 45
+    ins = rbt.Insert(data[2]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 45);
+    
+    // Insert 49
+    ins = rbt.Insert(data[3]);
+    EXPECT_EQ(ins, nullptr);
+    
+    // Insert 25
+    ins = rbt.Insert(data[4]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 25);
+
+    // Insert 65
+    ins = rbt.Insert(data[5]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 65);
+
+    // Insert 41
+    ins = rbt.Insert(data[6]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 41);
+
+    // Insert 13
+    ins = rbt.Insert(data[7]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 13);
+
+    // Insert 31
+    ins = rbt.Insert(data[8]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 31);
+
+    // Insert 58
+    ins = rbt.Insert(data[9]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 58);   
+}
+
+namespace binary_tree {
 
 void TestBinarySearchTree() {
     srand(time(nullptr));
@@ -11,7 +229,6 @@ void TestBinarySearchTree() {
 
     int n_data = 100;
     std::vector<int> data_to_ins(n_data);
-    // std::vector<int> data = {49, 49, 45, 49, 25, 65, 41, 13, 31, 58};
     for (int i = 0; i < n_data; ++i) {
         data_to_ins[i] = (rand() % (10 * n_data));
         // data_to_ins[i] = data[i];
@@ -91,10 +308,9 @@ void TestRBTree() {
     // }
 }
 
-} // namespace ds_practice
+} // namespace binary_tree 
 
-int main() {
-    // ds_practice::TestBinarySearchTree();
-    ds_practice::TestRBTree();
-    return 0;
+int main(int argc, char **argv) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
