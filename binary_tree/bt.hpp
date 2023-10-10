@@ -1,11 +1,11 @@
-#ifndef BST_HPP
-#define BST_HPP
+#ifndef BT_HPP
+#define BT_HPP
 
 #include <iostream>
 #include <queue>
 #include <vector>
 
-namespace ds_practice {
+namespace binary_tree {
 
 #define CREATE_BASE_TREETYPE_MEMBERS(TYPE) \
     T data_; \
@@ -14,12 +14,17 @@ namespace ds_practice {
     TYPE *parent_; \
 
 #define CREATE_OPERATORS_FOR_TYPE(TYPE) \
-    inline bool operator<(const TYPE& rhs) { return this->data_ < rhs.data_; } \
-    inline bool operator>(const TYPE& rhs) { return this->data_ > rhs.data_; } \
-    inline bool operator==(const TYPE& rhs) { return this->data_ == rhs.data_; } \
-    inline bool operator<(const T& rhs) { return this->data_ < rhs; } \
-    inline bool operator>(const T& rhs) { return this->data_ > rhs; } \
-    inline bool operator==(const T& rhs) { return this->data_ == rhs; } \
+    inline bool operator<(const TYPE& rhs) const { return this->data_ < rhs.data_; } \
+    inline bool operator<=(const TYPE& rhs) const { return this->data_ <= rhs.data_; } \
+    inline bool operator>(const TYPE& rhs) const { return this->data_ > rhs.data_; } \
+    inline bool operator>=(const TYPE& rhs) const { return this->data_ >= rhs.data_; } \
+    inline bool operator==(const TYPE& rhs) const { return this->data_ == rhs.data_; } \
+    inline bool operator<(const T& rhs) const { return this->data_ < rhs; } \
+    inline bool operator<=(const T& rhs) const { return this->data_ <= rhs; } \
+    inline bool operator>(const T& rhs) const { return this->data_ > rhs; } \
+    inline bool operator>=(const T& rhs) const { return this->data_ >= rhs; } \
+    inline bool operator==(const T& rhs) const { return this->data_ == rhs; } \
+    \
     friend std::ostream& operator<<(std::ostream& os, const TYPE& node) { \
         os << node.ToString(); \
         return os; \
@@ -72,6 +77,7 @@ class BinaryTreeBase {
     void Destroy(TreeNode* node);
     void InorderPrint(std::ostream& os, TreeNode* node) const;
     void TreePrint(std::ostream& os, TreeNode* node) const;
+    void TreePrintInternal(std::ostream& os, TreeNode* node, const std::string& prefix, bool is_left) const;
 
     virtual bool InsertRecursively(TreeNode*& parent, TreeNode* node) = 0;
     virtual TreeNode* SearchRecursively(TreeNode* node, const T& target) = 0;
@@ -124,51 +130,25 @@ void BinaryTreeBase<T, TreeNode>::InorderPrint(std::ostream& os, TreeNode* node)
     if (node->right_) InorderPrint(os, node->right_);
 }
 
+
+template<typename T, typename TreeNode>
+void BinaryTreeBase<T, TreeNode>::TreePrintInternal(std::ostream& os, TreeNode* node,
+                                                    const std::string& prefix, bool is_left) const {
+    os << prefix << (is_left ?  "├──" : "└──" );
+
+    if (node) {
+        os << *node << std::endl;
+
+        TreePrintInternal(os, node->left_,  prefix + (is_left ? "│   " : "    "), true);
+        TreePrintInternal(os, node->right_, prefix + (is_left ? "│   " : "    "), false);
+    } else {
+        os << "nil" << std::endl;
+    }
+}
+
 template<typename T, typename TreeNode>
 void BinaryTreeBase<T, TreeNode>::TreePrint(std::ostream& os, TreeNode* node) const {
-    std::queue<TreeNode*> node_q;
-    std::vector<std::vector<TreeNode*>> tree;
-
-    node_q.push(node);
-    while (!node_q.empty()) {
-        int n_nodes = node_q.size();
-        bool has_not_null = false;
-
-        tree.push_back({});
-
-        for (int i = 0; i < n_nodes; ++i) {
-            TreeNode* top_node = node_q.front();
-            node_q.pop();
-
-            tree.back().push_back(top_node);
-
-            if (top_node) {
-                node_q.push(top_node->left_);
-                node_q.push(top_node->right_);
-                has_not_null = true;
-            } else {
-                node_q.push(nullptr);
-                node_q.push(nullptr);
-            }
-        }
-
-        if (!has_not_null) {
-            tree.pop_back();
-            break;
-        }
-    }
-
-    int tree_depth = tree.size();
-    for (int i = 0; i < tree_depth; ++i) {
-        for (auto item : tree[i]) {
-            if (item) {
-                os << *item << " ";
-            } else {
-                os << "<x> ";
-            }
-        }
-        os << std::endl;
-    }
+    TreePrintInternal(os, node, "", false);
 }
 
 // ------------ Binary Search Tree -------------
@@ -314,7 +294,7 @@ struct RBTreeNode {
     inline void SetRed() { color_ = Color::Red; }
     inline void SetBlack() { color_ = Color::Black; }
     inline std::string ToString() const {
-        return "(" + std::to_string(data_) + ", " + (color_ == Color::Red ? "Red" : "Black") + ")";
+        return std::to_string(data_) + " " + (color_ == Color::Red ? "R" : "B");
     }
 
     CREATE_OPERATORS_FOR_TYPE(RBTreeNode);
@@ -339,6 +319,8 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     void LeftRotate(TreeNode* node);
     void RightRotate(TreeNode* node);
 
+    void InsertFixUp(TreeNode*& node);
+
 };
 
 template<typename T>
@@ -355,6 +337,7 @@ bool RBTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
     if (!parent) {
         parent = node;
         node->SetRed();
+        InsertFixUp(node);
         return true;
     }
 
@@ -365,6 +348,8 @@ bool RBTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
         node->parent_ = parent;
         parent->left_ = node;
+        node->SetRed();
+        InsertFixUp(node);
         return true;
     } else if (*node > *parent) {
         if (parent->right_) {
@@ -373,6 +358,8 @@ bool RBTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
         node->parent_ = parent;
         parent->right_ = node;
+        node->SetRed();
+        InsertFixUp(node);
         return true;
     }
     return false;
@@ -518,6 +505,72 @@ void RBTree<T>::RightRotate(TreeNode* node) {
     node->parent_ = f_node;
 }
 
+
+template<typename T>
+void RBTree<T>::InsertFixUp(TreeNode*& node) {
+    TreeNode *parent = node->parent_;
+    if (parent == nullptr) {
+        // Case 1: Node is root, set it to black;
+        node->SetBlack();
+
+    } else if (parent->IsRed()) {
+        // Case 2: Parent node is red
+        // There must be a grand parent
+        TreeNode* grand_parent = parent->parent_;
+        bool parent_is_left = (parent == grand_parent->left_);
+        bool is_left = (node == parent->left_);
+        TreeNode *uncle = (parent_is_left ? grand_parent->right_ : grand_parent->left_);
+
+        if (uncle && uncle->IsRed()) {
+            // Case 2.1: Uncle node is red
+            // Set parent & uncle to black, set grand parent to red
+            parent->SetBlack();
+            uncle->SetBlack();
+            grand_parent->SetRed();
+
+            // Fixup grandparent recursively
+            InsertFixUp(grand_parent);
+        } else {
+            // Case 2.2: Uncle is black
+            bool has_rotate = false;
+            if (parent_is_left) {
+                if (!is_left) {
+                    // node is right child, parent is left
+                    // left rotate parent
+                    LeftRotate(parent);
+                    has_rotate = true;
+                }
+            } else {
+                if (is_left) {
+                    // node is left child, parent is right
+                    // right rotate parent
+                    RightRotate(parent);
+                    has_rotate = true;
+                }
+            }
+
+            if (has_rotate) {
+                InsertFixUp(parent);
+            } else {
+                // Case 2.3: Uncle is black, node is left child
+                // Set parent to black, set grand parent to red
+                parent->SetBlack();
+                grand_parent->SetRed();
+
+                // rotate grand parent
+                if (parent_is_left) {
+                    RightRotate(grand_parent);
+                } else {
+                    LeftRotate(grand_parent);
+                }
+            }
+        }
+    } 
+
+    // Case 3: Parent node is black, do nothing
+    return;
+}
+
 // ------------ AVL Tree -------------
 
 template<typename T>
@@ -552,6 +605,6 @@ bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
     return false;
 }
 
-}  // namespace bst
+}  // namespace binary_tree
 
 #endif
