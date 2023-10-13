@@ -1,29 +1,85 @@
 #include <vector>
 #include <unordered_set>
 #include <iostream>
+#include <chrono>
 
 #include <gtest/gtest.h>
 
 #include "bt.hpp"
+
+class Timer {
+private:
+    std::chrono::time_point<std::chrono::steady_clock> start_;
+    int64_t &duration_us_;
+
+public:
+    explicit Timer(int64_t &dur) : duration_us_(dur) {
+        start_ = std::chrono::steady_clock::now();
+    }
+
+    ~Timer() {
+        auto end = std::chrono::steady_clock::now();
+        duration_us_ = std::chrono::duration_cast<std::chrono::microseconds>(end - start_).count();
+    }
+};
 
 class BstTest : public ::testing::Test {
  protected:
     void SetUp() override {
         data = std::move(std::vector<int> {49, 49, 45, 49, 25, 65, 41, 13, 31, 58});
         n_data = data.size();
+        srand(kRandomSeed);
+        for (int i = 0; i < kNPerfData; ++i) {
+            perf_data[i] = rand() % kNPerfData;
+        }
     }
 
     std::vector<int> data;
+
+    static constexpr const int kNPerfData = 1000000;
+    static constexpr const int kRandomSeed = 1234;
+    int perf_data[kNPerfData];
     int n_data;
 
 };
 
-TEST_F(BstTest, BSTreePrint) {
+TEST_F(BstTest, Clear) {
     binary_tree::BinarySearchTree<int> bst;
     for (auto x : data) {
         bst.Insert(x);
     }
+    EXPECT_NO_THROW(bst.Clear());
+}
 
+TEST_F(BstTest, GetHeight) {
+    binary_tree::BinarySearchTree<int> bst;
+    binary_tree::RBTree<int> rbt;
+    for (auto x : data) {
+        bst.Insert(x);
+        rbt.Insert(x);
+    }
+
+    EXPECT_EQ(bst.GetHeight(), 5);
+    EXPECT_EQ(rbt.GetHeight(), 4);
+    bst.Clear();
+    rbt.Clear();
+
+    for (int i = 0; i < kNPerfData; ++i) {
+        bst.Insert(perf_data[i]);
+        rbt.Insert(perf_data[i]);
+    }
+    std::cout << "BST height with 1 million items: " << bst.GetHeight() << std::endl;
+    std::cout << "RBT height with 1 million items: " << rbt.GetHeight() << std::endl;
+}
+
+TEST_F(BstTest, BSTreePrint) {
+    binary_tree::BinarySearchTree<int> bst;
+    for (auto x : data) {
+        EXPECT_NO_THROW(bst.Insert(x));
+    }
+
+    std::cout << bst << std::endl;
+    EXPECT_NO_THROW(bst.Clear());
     std::cout << bst << std::endl;
 }
 
@@ -80,6 +136,18 @@ TEST_F(BstTest, BSTreeInsert) {
     ins = bst.Insert(data[9]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 58);
+
+    // Perf
+    bst.Clear();
+    int64_t bst_random_insertion_time = 0;
+    {
+        Timer _(bst_random_insertion_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            bst.Insert(perf_data[i]);
+        }
+    }
+    std::cout << "BST insert " << kNPerfData << " items time: "
+              << bst_random_insertion_time << " us" << std::endl;
 }
 
 TEST_F(BstTest, BSTreeSearch) {
@@ -126,6 +194,21 @@ TEST_F(BstTest, BSTreeSearch) {
     res = bst.Search(100);
     EXPECT_EQ(res, nullptr);
 
+    // Perf
+    bst.Clear();
+    for (int i = 0; i < kNPerfData; ++i) {
+        bst.Insert(perf_data[i]);
+    }
+
+    int64_t bst_random_search_time = 0;
+    {
+        Timer _(bst_random_search_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            bst.Search(perf_data[i]);
+        }
+    }
+    std::cout << "BST search " << kNPerfData << " times takes: "
+              << bst_random_search_time << " us" << std::endl;
 }
 
 TEST_F(BstTest, BSTreeDelete) {
@@ -163,6 +246,8 @@ TEST_F(BstTest, RBTreePrint) {
         auto ret = rbt.Insert(x);
     }
 
+    std::cout << rbt << std::endl;
+    EXPECT_NO_THROW(rbt.Clear());
     std::cout << rbt << std::endl;
 }
 
@@ -219,96 +304,80 @@ TEST_F(BstTest, RBTreeInsert) {
     ins = rbt.Insert(data[9]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 58);   
-}
 
-namespace binary_tree {
-
-void TestBinarySearchTree() {
-    srand(time(nullptr));
-    BinarySearchTree<int> bst;
-
-    int n_data = 100;
-    std::vector<int> data_to_ins(n_data);
-    for (int i = 0; i < n_data; ++i) {
-        data_to_ins[i] = (rand() % (10 * n_data));
-        // data_to_ins[i] = data[i];
-    }
-
-    std::cout << "Insert data: ";
-    for (auto x : data_to_ins) {
-        std::cout << x << " ";
-        if (bst.Insert(x)) {
-            std::cout << "ok, ";
+    // Perf
+    rbt.Clear();
+    int64_t rbt_random_insertion_time = 0;
+    {
+        Timer _(rbt_random_insertion_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            rbt.Insert(perf_data[i]);
         }
     }
-    std::cout << std::endl;
-
-    std::cout << "bst: " << bst;
-
-    std::cout << "Search exist: " << *bst.Search(data_to_ins[rand() % data_to_ins.size()]) << std::endl;
-    std::cout << "Search non-exist: " << (bst.Search(-1) == nullptr ? "Not found" : "found") << std::endl;
-
-    for (auto x : data_to_ins) {
-        int to_del = x;
-        if (bst.Delete(to_del)) {
-            std::cout << "Delete " << to_del << " success\n";
-        } else {
-            std::cout << "Delete " << to_del << " failed\n";
-        }
-        std::cout << "bst after delete: " << bst;
-    }
+    std::cout << "RBT insert " << kNPerfData << " items time: "
+              << rbt_random_insertion_time << " us" << std::endl;
 }
 
-void TestRBTree() {
-    srand(time(nullptr));
-    RBTree<int> rbt;
+TEST_F(BstTest, RBTreeSearch) {
+    using Node = binary_tree::RBTree<int>::TreeNodeType;
+    binary_tree::RBTree<int> rbt;
+    Node *res = nullptr;
 
-    int n_data = 10;
-    std::vector<int> data_to_ins(n_data);
-    std::vector<int> data = {49, 49, 45, 49, 25, 65, 41, 13, 31, 58};
-    for (int i = 0; i < n_data; ++i) {
-        // data_to_ins[i] = (rand() % (10 * n_data));
-        data_to_ins[i] = data[i];
+    for (auto x : data) {
+        rbt.Insert(x);
     }
 
-    std::cout << "Insert data: ";
-    for (auto x : data_to_ins) {
-        std::cout << x << " ";
-        if (rbt.Insert(x)) {
-            std::cout << "ok, ";
+    res = rbt.Search(49);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 49);
+
+    res = rbt.Search(45);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 45);
+
+    res = rbt.Search(25);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 25);
+
+    res = rbt.Search(65);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 65);
+
+    res = rbt.Search(41);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 41);
+
+    res = rbt.Search(13);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 13);
+
+    res = rbt.Search(31);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 31);
+
+    res = rbt.Search(58);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 58);
+
+    res = rbt.Search(100);
+    EXPECT_EQ(res, nullptr);
+
+    // Perf
+    rbt.Clear();
+    for (int i = 0; i < kNPerfData; ++i) {
+        rbt.Insert(perf_data[i]);
+    }
+
+    int64_t rbt_random_search_time = 0;
+    {
+        Timer _(rbt_random_search_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            rbt.Search(perf_data[i]);
         }
     }
-    std::cout << std::endl;
-
-    std::cout << "rbt: " << rbt;
-
-    int rot_test_item = 25;
-    auto node = rbt.Search(rot_test_item);
-    if (node) {
-        std::cout << "Search for " << rot_test_item << ": " << *node << std::endl;
-        rbt.TestRotate(true, node);
-        std::cout << "Tree after left rotate " << rot_test_item << ": " << rbt << std::endl;
-        rbt.TestRotate(false, node);
-        std::cout << "Tree after right rotate " << rot_test_item << ": " << rbt << std::endl;
-    } else {
-        std::cout << "Search " << rot_test_item << " failed\n";
-    }
-
-    // std::cout << "Search exist: " << *rbt.Search(data_to_ins[rand() % data_to_ins.size()]) << std::endl;
-    // std::cout << "Search non-exist: " << (rbt.Search(-1) == nullptr ? "Not found" : "found") << std::endl;
-
-    // for (auto x : data_to_ins) {
-    //     int to_del = x;
-    //     if (rbt.Delete(to_del)) {
-    //         std::cout << "Delete " << to_del << " success\n";
-    //     } else {
-    //         std::cout << "Delete " << to_del << " failed\n";
-    //     }
-    //     std::cout << "bst after delete: " << rbt;
-    // }
+    std::cout << "RBT search " << kNPerfData << " times takes: "
+              << rbt_random_search_time << " us" << std::endl;
 }
-
-} // namespace binary_tree 
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
