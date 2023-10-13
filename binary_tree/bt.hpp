@@ -4,6 +4,7 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <algorithm>
 
 namespace binary_tree {
 
@@ -65,8 +66,11 @@ class BinaryTreeBase {
     }
 
     TreeNode* Insert(const T& data);
-    TreeNode* Search(const T& target);
+    TreeNode* Search(const T& target) const;
     bool Delete(const T& target);
+
+    void Clear();
+    int GetHeight() const;
 
     template<typename U, typename TreeNodeT>
     friend std::ostream& operator<<(std::ostream& os, const BinaryTreeBase<U, TreeNodeT>& bst);
@@ -79,8 +83,10 @@ class BinaryTreeBase {
     void TreePrint(std::ostream& os, TreeNode* node) const;
     void TreePrintInternal(std::ostream& os, TreeNode* node, const std::string& prefix, bool is_left) const;
 
+    int GetHeightInternal(TreeNode* node) const;
+
     virtual bool InsertRecursively(TreeNode*& parent, TreeNode* node) = 0;
-    virtual TreeNode* SearchRecursively(TreeNode* node, const T& target) = 0;
+    virtual TreeNode* SearchRecursively(TreeNode* node, const T& target) const = 0;
     virtual bool DeleteRecursively(TreeNode* node, const T& target) = 0;
 }; // class BinaryTreeBase
 
@@ -95,13 +101,36 @@ TreeNode* BinaryTreeBase<T, TreeNode>::Insert(const T& data) {
 }
 
 template<typename T, typename TreeNode>
-TreeNode* BinaryTreeBase<T, TreeNode>::Search(const T& target) {
+TreeNode* BinaryTreeBase<T, TreeNode>::Search(const T& target) const {
     return SearchRecursively(root_, target);
 }
 
 template<typename T, typename TreeNode>
 bool BinaryTreeBase<T, TreeNode>::Delete(const T& target) {
     return DeleteRecursively(root_, target);
+}
+
+template<typename T, typename TreeNode>
+int BinaryTreeBase<T, TreeNode>::GetHeight() const {
+    return GetHeightInternal(root_);
+}
+
+template<typename T, typename TreeNode>
+void BinaryTreeBase<T, TreeNode>::Clear() {
+    Destroy(root_);
+    root_ = nullptr;
+}
+
+template<typename T, typename TreeNode>
+int BinaryTreeBase<T, TreeNode>::GetHeightInternal(TreeNode* node) const {
+    if (!node) {
+        return 0;
+    }
+
+    int left_height = GetHeightInternal(node->left_);
+    int right_height = GetHeightInternal(node->right_);
+
+    return std::max(left_height, right_height) + 1;
 }
 
 template<typename T, typename TreeNode>
@@ -164,7 +193,7 @@ class BinarySearchTree final : public BinaryTreeBase<T> {
     using BaseTreeType = BinaryTreeBase<T>;
 
     bool InsertRecursively(TreeNode*& parent, TreeNode* node) override;
-    TreeNode* SearchRecursively(TreeNode* node, const T& target) override;
+    TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
     bool DeleteRecursively(TreeNode* node, const T& target) override;
 
 };
@@ -198,7 +227,7 @@ bool BinarySearchTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
 template<typename T>
 typename BinarySearchTree<T>::TreeNode*
-BinarySearchTree<T>::SearchRecursively(TreeNode* node, const T& target) {
+BinarySearchTree<T>::SearchRecursively(TreeNode* node, const T& target) const {
     if (!node) return nullptr;
     if (*node == target) return node;
     else if (*node > target) {
@@ -313,7 +342,7 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     using BaseTreeType = BinaryTreeBase<T, RBTreeNode<T>>;
 
     bool InsertRecursively(TreeNode*& parent, TreeNode* node) override;
-    TreeNode* SearchRecursively(TreeNode* node, const T& target) override;
+    TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
     bool DeleteRecursively(TreeNode* node, const T& target) override;
 
     void LeftRotate(TreeNode* node);
@@ -367,7 +396,7 @@ bool RBTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
 template<typename T>
 typename RBTree<T>::TreeNode*
-RBTree<T>::SearchRecursively(TreeNode* node, const T& target) {
+RBTree<T>::SearchRecursively(TreeNode* node, const T& target) const {
     if (!node) return nullptr;
     if (*node == target) return node;
     else if (*node > target) {
@@ -393,6 +422,8 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
         bool is_left_child = (!is_root && (parent->left_ == node));
 
         if (!node->left_ && !node->right_) {
+            // Case 1: no children
+            // Delete Directly
             delete node;
             if (is_root) BaseTreeType::root_ = nullptr;
             else {
@@ -401,6 +432,8 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             }
 
         } else if (!node->right_) {
+            // Case 2: has one child
+            // Replace node with the child
             TreeNode *l_node = node->left_;
             if (is_root) {
                 BaseTreeType::root_ = l_node;
@@ -412,6 +445,7 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             delete node;
 
         } else if (!node->left_) {
+            // Case 2
             TreeNode *r_node = node->right_;
             if (is_root) {
                 BaseTreeType::root_ = r_node;
@@ -423,12 +457,16 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             delete node;
 
         } else {
+            // Case 3: has 2 children
+            // Find the inorder proceeding node
             TreeNode *ino_prev = node->left_;
             while (ino_prev->right_) {
                 ino_prev = ino_prev->right_;
             }
+            // Exchange the value of node and proceeding node
             node->data_ = ino_prev->data_;
 
+            // Delete proceeding
             return DeleteRecursively(ino_prev, ino_prev->data_);
         }
 
@@ -584,7 +622,7 @@ class AVLTree final : public BinaryTreeBase<T> {
     using BaseTreeType = BinaryTreeBase<T>;
 
     bool InsertRecursively(TreeNode*& parent, TreeNode* node) override;
-    TreeNode* SearchRecursively(TreeNode* node, const T& target) override;
+    TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
     bool DeleteRecursively(TreeNode* node, const T& target) override;
 
 };
@@ -596,7 +634,7 @@ bool AVLTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
 template<typename T>
 typename AVLTree<T>::TreeNode*
-AVLTree<T>::SearchRecursively(TreeNode* node, const T& target) {
+AVLTree<T>::SearchRecursively(TreeNode* node, const T& target) const {
     return nullptr;
 }
 
