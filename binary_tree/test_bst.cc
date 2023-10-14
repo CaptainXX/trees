@@ -261,49 +261,67 @@ TEST_F(BstTest, RBTreeInsert) {
     ins = rbt.Insert(data[0]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 49);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 49
     ins = rbt.Insert(data[1]);
     EXPECT_EQ(ins, nullptr);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 45
     ins = rbt.Insert(data[2]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 45);
+    EXPECT_TRUE(rbt.IsTreeValid());
     
     // Insert 49
     ins = rbt.Insert(data[3]);
     EXPECT_EQ(ins, nullptr);
+    EXPECT_TRUE(rbt.IsTreeValid());
     
     // Insert 25
     ins = rbt.Insert(data[4]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 25);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 65
     ins = rbt.Insert(data[5]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 65);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 41
     ins = rbt.Insert(data[6]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 41);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 13
     ins = rbt.Insert(data[7]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 13);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 31
     ins = rbt.Insert(data[8]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 31);
+    EXPECT_TRUE(rbt.IsTreeValid());
 
     // Insert 58
     ins = rbt.Insert(data[9]);
     EXPECT_NE(ins, nullptr);
     EXPECT_EQ(*ins, 58);   
+    EXPECT_TRUE(rbt.IsTreeValid());
+
+    // Multi Insert test
+    rbt.Clear();
+    int samples = (kNPerfData > 10000 ? 10000 : kNPerfData);
+    for (int i = 0; i < samples; ++i) {
+        rbt.Insert(perf_data[i]);
+        EXPECT_TRUE(rbt.IsTreeValid());
+    }
 
     // Perf
     rbt.Clear();
@@ -387,13 +405,24 @@ TEST_F(BstTest, RBTreeDelete) {
     for (auto x : data) {
         rbt.Insert(x);
     }
-    std::cout << rbt << std::endl;
 
     for (auto x : data) {
         rbt.Delete(x);
-        std::cout << rbt << std::endl;
+
+        EXPECT_TRUE(rbt.IsTreeValid());
     }
 
+    // Multi Deletes
+    rbt.Clear();
+    int samples = (kNPerfData > 10000 ? 10000 : kNPerfData);
+    for (int i = 0; i < samples; ++i) {
+        rbt.Insert(perf_data[i]);
+    }
+
+    for (int i = 0; i < samples; ++i) {
+        rbt.Delete(perf_data[i]);
+        EXPECT_TRUE(rbt.IsTreeValid());
+    }
 }
 
 int main(int argc, char **argv) {

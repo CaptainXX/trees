@@ -336,7 +336,7 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     RBTree() {}
     ~RBTree() {}
 
-    void TestRotate(bool rot_left, RBTreeNode<T>* node);
+    bool IsTreeValid() const;
 
  protected:
     using TreeNode = RBTreeNode<T>;
@@ -352,15 +352,73 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     void InsertFixUp(TreeNode* node);
     void DeleteFixUp(TreeNode* node, TreeNode* parent);
 
+    int CheckRedAndBlackNodeFeatureInternal(TreeNode* node, bool& is_red_valid, bool& is_black_valid) const;
+
 };
 
 template<typename T>
-void RBTree<T>::TestRotate(bool rot_left, RBTreeNode<T>* node) {
-    if (rot_left) {
-        LeftRotate(node);
-    } else {
-        RightRotate(node);
+bool RBTree<T>::IsTreeValid() const {
+    // Check RBTree attributes
+    // 1. Each node is either black or red(Always)
+    // 2. Root is black
+    if (BaseTreeType::root_ && BaseTreeType::root_->IsRed()) {
+        std::cout << "Root is red\n";
+        return false;
     }
+
+    // 3. Leaves are black(Always: null is black)
+    // 4. If a node is red, its child must be black
+    // 5. Each path containing the same number of black nodes
+    bool is_red_valid = true;
+    bool is_black_valid = true;
+    CheckRedAndBlackNodeFeatureInternal(BaseTreeType::root_, is_red_valid, is_black_valid);
+    if (!is_red_valid) {
+        std::cout << "Red has red child\n";
+        return false;
+    }
+    if (!is_black_valid) {
+        std::cout << "Black node has diffrent number in different paths\n";
+        return false;
+    }
+
+    return true;
+}
+
+template<typename T>
+int RBTree<T>::CheckRedAndBlackNodeFeatureInternal(TreeNode* node, bool& is_red_valid, bool& is_black_valid) const {
+    if (!is_red_valid || !is_black_valid) {
+        return -1;
+    }
+
+    if (!node) {
+        return 1;
+    }
+
+    if (node->IsRed() &&
+        ((node->left_ && node->left_->IsRed()) ||
+         (node->right_ && node->right_->IsRed()))) {
+        is_red_valid = false;
+        return -1;
+    }
+
+    int left_black_count = CheckRedAndBlackNodeFeatureInternal(node->left_, is_red_valid, is_black_valid);
+
+    if (!is_red_valid || !is_black_valid) {
+        return -1;
+    }
+
+    int right_black_count = CheckRedAndBlackNodeFeatureInternal(node->right_, is_red_valid, is_black_valid);
+
+    if (!is_red_valid || !is_black_valid) {
+        return -1;
+    }
+
+    if (left_black_count != right_black_count) {
+        is_black_valid = false;
+        return -1;
+    }
+
+    return left_black_count + (!node->IsRed());
 }
 
 template<typename T>
