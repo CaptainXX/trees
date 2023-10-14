@@ -800,7 +800,37 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
 // ------------ AVL Tree -------------
 
 template<typename T>
-class AVLTree final : public BinaryTreeBase<T> {
+struct AVLTreeNode {
+    int left_height_;
+    int right_height_;
+
+    CREATE_BASE_TREETYPE_MEMBERS(AVLTreeNode);
+
+    AVLTreeNode(): left_height_(0), right_height_(0), data_(),
+                  left_(nullptr), right_(nullptr),
+                  parent_(nullptr) {}
+    AVLTreeNode(T data): left_height_(0), right_height_(0), data_(data),
+                        left_(nullptr), right_(nullptr),
+                        parent_(nullptr) {}
+    AVLTreeNode(T data, int left_height, int right_height): left_height_(left_height),
+                        right_height_(right_height), data_(data),
+                        left_(nullptr), right_(nullptr),
+                        parent_(nullptr) {}
+
+    inline int GetLeftHeight() const { return left_height_; }
+    inline int GetRightHeight() const { return right_height_; }
+    inline void SetLeftHeight(int h) { left_height_ = h; }
+    inline void SetRightHeight(int h) { right_height_ = h; }
+    inline int GetBalanceFactor() const { return left_height_ - right_height_; }
+    inline std::string ToString() const {
+        return std::to_string(data_);
+    }
+
+    CREATE_OPERATORS_FOR_TYPE(AVLTreeNode);
+};
+
+template<typename T>
+class AVLTree final : public BinaryTreeBase<T, AVLTreeNode<T>> {
  public:
     AVLTree() {}
     ~AVLTree() {}
