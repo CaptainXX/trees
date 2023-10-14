@@ -379,6 +379,23 @@ TEST_F(BstTest, RBTreeSearch) {
               << rbt_random_search_time << " us" << std::endl;
 }
 
+TEST_F(BstTest, RBTreeDelete) {
+    using Node = binary_tree::RBTree<int>::TreeNodeType;
+    binary_tree::RBTree<int> rbt;
+    Node *res = nullptr;
+
+    for (auto x : data) {
+        rbt.Insert(x);
+    }
+    std::cout << rbt << std::endl;
+
+    for (auto x : data) {
+        rbt.Delete(x);
+        std::cout << rbt << std::endl;
+    }
+
+}
+
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

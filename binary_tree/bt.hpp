@@ -350,7 +350,7 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     void RightRotate(TreeNode* node);
 
     void InsertFixUp(TreeNode* node);
-    void DeleteFixUp(TreeNode* node);
+    void DeleteFixUp(TreeNode* node, TreeNode* parent);
 
 };
 
@@ -433,7 +433,7 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             }
 
             if (!node->IsRed()) {
-                DeleteFixUp(node);
+                DeleteFixUp(nullptr, parent);
             }
 
             delete node;
@@ -451,7 +451,7 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             l_node->parent_ = parent;
 
             if (!node->IsRed()) {
-                DeleteFixUp(node);
+                DeleteFixUp(l_node, parent);
             }
 
             delete node;
@@ -468,7 +468,7 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             r_node->parent_ = parent;
 
             if (!node->IsRed()) {
-                DeleteFixUp(node);
+                DeleteFixUp(r_node, parent);
             }
 
             delete node;
@@ -636,7 +636,105 @@ void RBTree<T>::InsertFixUp(TreeNode* node) {
 
 
 template<typename T>
-void RBTree<T>::DeleteFixUp(TreeNode* node) {
+void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
+    if (node && node->IsRed()) {
+        // Case 1.1: node is red
+        // Set it black and over 
+        node->SetBlack();
+        return;
+    } else if (!parent) {
+        // Case 1.2: node is root
+        return;
+    }
+
+    // Case 2: Node is black or null(also black)
+    TreeNode *sibling = (parent->left_ == node ? parent->right_ : parent->left_);
+    bool is_left = (node == parent->left_);
+    if (is_left) {
+        if (sibling && sibling->IsRed()) {
+            // Case 2.1: sibling node is red
+            sibling->SetBlack();
+            parent->SetRed();
+
+            LeftRotate(parent);
+
+            DeleteFixUp(node, parent);
+        } else {
+            if (!sibling ||
+                ((!sibling->left_ || !sibling->left_->IsRed()) &&
+                 (!sibling->right_ || !sibling->right_->IsRed()))) {
+                // Case 2.2: sibling node is black, and its children are black
+                if (sibling) {
+                    sibling->SetRed();
+                }
+
+                DeleteFixUp(parent, parent->parent_);
+            } else if (!sibling->right_ || !sibling->right_->IsRed()) {
+                // Case 2.3: sibling node is black, its right child is black and left is red
+                sibling->left_->SetBlack();
+                sibling->SetRed();
+                RightRotate(sibling);
+                
+                DeleteFixUp(node, parent);
+            } else {
+                // Case 2.4: sibling node is black, its right child is red and left can be either
+                if (parent->IsRed()) {
+                    sibling->SetRed();
+                } else {
+                    sibling->SetBlack();
+                }
+
+                parent->SetBlack();
+                sibling->right_->SetBlack();
+                LeftRotate(parent);
+
+                return;
+            }
+        }
+
+    } else {
+        if (sibling && sibling->IsRed()) {
+            // Case 2.1: sibling node is red
+            sibling->SetBlack();
+            parent->SetRed();
+
+            RightRotate(parent);
+
+            DeleteFixUp(node, parent);
+        } else {
+            if (!sibling ||
+                ((!sibling->left_ || !sibling->left_->IsRed()) &&
+                 (!sibling->right_ || !sibling->right_->IsRed()))) {
+                // Case 2.2: sibling node is black, and its children are black
+                if (sibling) {
+                    sibling->SetRed();
+                }
+
+                DeleteFixUp(parent, parent->parent_);
+            } else if (!sibling->left_ || !sibling->left_->IsRed()) {
+                // Case 2.3: sibling node is black, its left child is black and right is red
+                sibling->right_->SetBlack();
+                sibling->SetRed();
+                LeftRotate(sibling);
+                
+                DeleteFixUp(node, parent);
+            } else {
+                // Case 2.4: sibling node is black, its right child is red and left can be either
+                if (parent->IsRed()) {
+                    sibling->SetRed();
+                } else {
+                    sibling->SetBlack();
+                }
+
+                parent->SetBlack();
+                sibling->left_->SetBlack();
+                RightRotate(parent);
+
+                return;
+            }
+        }
+
+    }
 
 }
 
