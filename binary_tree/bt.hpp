@@ -5,6 +5,7 @@
 #include <queue>
 #include <vector>
 #include <algorithm>
+#include <exception>
 
 namespace binary_tree {
 
@@ -348,7 +349,8 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     void LeftRotate(TreeNode* node);
     void RightRotate(TreeNode* node);
 
-    void InsertFixUp(TreeNode*& node);
+    void InsertFixUp(TreeNode* node);
+    void DeleteFixUp(TreeNode* node);
 
 };
 
@@ -424,12 +426,17 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
         if (!node->left_ && !node->right_) {
             // Case 1: no children
             // Delete Directly
-            delete node;
             if (is_root) BaseTreeType::root_ = nullptr;
             else {
                 if (is_left_child) parent->left_ = nullptr;
                 else parent->right_ = nullptr;
             }
+
+            if (!node->IsRed()) {
+                DeleteFixUp(node);
+            }
+
+            delete node;
 
         } else if (!node->right_) {
             // Case 2: has one child
@@ -442,6 +449,11 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
                 else parent->right_ = l_node;
             }
             l_node->parent_ = parent;
+
+            if (!node->IsRed()) {
+                DeleteFixUp(node);
+            }
+
             delete node;
 
         } else if (!node->left_) {
@@ -454,6 +466,11 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
                 else parent->right_ = r_node;
             }
             r_node->parent_ = parent;
+
+            if (!node->IsRed()) {
+                DeleteFixUp(node);
+            }
+
             delete node;
 
         } else {
@@ -485,6 +502,10 @@ void RBTree<T>::LeftRotate(TreeNode* node) {
      *        R     X        F     R
      */
     TreeNode* v_node = node->right_;
+    if (!v_node) {
+        throw std::runtime_error("RBTree LeftRotate Failed, with null V node");
+    }
+
     TreeNode* r_node = v_node->left_;
     TreeNode* parent = node->parent_;
     node->right_ = r_node;
@@ -520,6 +541,10 @@ void RBTree<T>::RightRotate(TreeNode* node) {
      *  D     K                    K     V
      */
     TreeNode* f_node = node->left_;
+    if (!f_node) {
+        throw std::runtime_error("RBTree LeftRotate Failed, with null F node");
+    }
+
     TreeNode* k_node = f_node->right_;
     TreeNode* parent = node->parent_;
     node->left_ = k_node;
@@ -545,7 +570,7 @@ void RBTree<T>::RightRotate(TreeNode* node) {
 
 
 template<typename T>
-void RBTree<T>::InsertFixUp(TreeNode*& node) {
+void RBTree<T>::InsertFixUp(TreeNode* node) {
     TreeNode *parent = node->parent_;
     if (parent == nullptr) {
         // Case 1: Node is root, set it to black;
@@ -608,6 +633,13 @@ void RBTree<T>::InsertFixUp(TreeNode*& node) {
     // Case 3: Parent node is black, do nothing
     return;
 }
+
+
+template<typename T>
+void RBTree<T>::DeleteFixUp(TreeNode* node) {
+
+}
+
 
 // ------------ AVL Tree -------------
 
