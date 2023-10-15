@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <iostream>
 #include <chrono>
+#include <set>
 
 #include <gtest/gtest.h>
 
@@ -194,6 +195,22 @@ TEST_F(BstTest, BSTreeSearch) {
     res = bst.Search(100);
     EXPECT_EQ(res, nullptr);
 
+    // Case: insert an ordered array
+    bst.Clear();
+    int samples = (kNPerfData > 100000 ? 100000 : kNPerfData);
+    for (int i = 0; i < samples; ++i) {
+        bst.Insert(i);
+    }
+    int64_t bst_ordered_search_time = 0;
+    {
+        Timer _(bst_ordered_search_time);
+        for (int i = 0; i < samples; ++i) {
+            bst.Search(i);
+        }
+    }
+    std::cout << "BST search ordered " << samples << " times takes: "
+              << bst_ordered_search_time << " us" << std::endl;
+
     // Perf
     bst.Clear();
     for (int i = 0; i < kNPerfData; ++i) {
@@ -379,6 +396,37 @@ TEST_F(BstTest, RBTreeSearch) {
 
     res = rbt.Search(100);
     EXPECT_EQ(res, nullptr);
+
+    // Case: insert an ordered array
+    rbt.Clear();
+    for (int i = 0; i < kNPerfData; ++i) {
+        rbt.Insert(i);
+    }
+    int64_t bst_ordered_search_time = 0;
+    {
+        Timer _(bst_ordered_search_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            rbt.Search(i);
+        }
+    }
+    std::cout << "RBT search ordered " << kNPerfData << " times takes: "
+              << bst_ordered_search_time << " us" << std::endl;
+    
+    // Case: Compare to std::set
+    std::set<int> stdlib_set;
+    for (int i = 0; i < kNPerfData; ++i) {
+        stdlib_set.insert(i);
+    }
+    int64_t set_ordered_search_time = 0;
+    {
+        Timer _(set_ordered_search_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            stdlib_set.find(i);
+        }
+    }
+    std::cout << "std::set search ordered " << kNPerfData << " times takes: "
+              << set_ordered_search_time << " us" << std::endl;
+ 
 
     // Perf
     rbt.Clear();
