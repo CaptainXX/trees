@@ -9,6 +9,93 @@
 
 namespace binary_tree {
 
+// ------------ Help Functions -------------
+
+template<typename TreeNode>
+void LeftRotate(TreeNode* node, TreeNode** root) {
+    /*      parent               parent
+     *        |                    |
+     *        P                    V
+     *      /   \    ------\     /   \
+     *     F     V   ------/    P     X
+     *         /   \          /   \
+     *        R     X        F     R
+     */
+    if (!node) {
+        throw std::runtime_error("LeftRotate Failed, with null P node");
+    }
+
+    TreeNode* v_node = node->right_;
+    if (!v_node) {
+        throw std::runtime_error("LeftRotate Failed, with null V node");
+    }
+
+    TreeNode* r_node = v_node->left_;
+    TreeNode* parent = node->parent_;
+    node->right_ = r_node;
+
+    if (r_node) {
+        r_node->parent_ = node;
+    }
+
+    v_node->parent_ = parent;
+
+    if (!parent) {
+        (*root) = v_node;
+    } else {
+        if (parent->left_ == node) {
+            parent->left_ = v_node;
+        } else {
+            parent->right_ = v_node;
+        }
+    }
+
+    v_node->left_ = node;
+    node->parent_ = v_node;
+}
+
+template<typename TreeNode>
+void RightRotate(TreeNode* node, TreeNode** root) {
+    /*      parent               parent
+     *        |                    |
+     *        P                    F
+     *      /   \    ------\     /   \
+     *     F     V   ------/    D     P
+     *   /   \                      /   \
+     *  D     K                    K     V
+     */
+    if (!node) {
+        throw std::runtime_error("RightRotate Failed, with null P node");
+    }
+
+    TreeNode* f_node = node->left_;
+    if (!f_node) {
+        throw std::runtime_error("RightRotate Failed, with null F node");
+    }
+
+    TreeNode* k_node = f_node->right_;
+    TreeNode* parent = node->parent_;
+    node->left_ = k_node;
+
+    if (k_node) {
+        k_node->parent_ = node;
+    }
+
+    f_node->parent_ = parent;
+    if (!parent) {
+        (*root) = f_node;
+    } else {
+        if (parent->left_ == node) {
+            parent->left_ = f_node;
+        } else {
+            parent->right_ = f_node;
+        }
+    }
+
+    f_node->right_ = node;
+    node->parent_ = f_node;
+}
+
 #define CREATE_BASE_TREETYPE_MEMBERS(TYPE) \
     T data_; \
     TYPE *left_; \
@@ -346,9 +433,6 @@ class RBTree final : public BinaryTreeBase<T, RBTreeNode<T>> {
     TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
     bool DeleteRecursively(TreeNode* node, const T& target) override;
 
-    void LeftRotate(TreeNode* node);
-    void RightRotate(TreeNode* node);
-
     void InsertFixUp(TreeNode* node);
     void DeleteFixUp(TreeNode* node, TreeNode* parent);
 
@@ -550,84 +634,6 @@ bool RBTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
 }
 
 template<typename T>
-void RBTree<T>::LeftRotate(TreeNode* node) {
-    /*      parent               parent
-     *        |                    |
-     *        P                    V
-     *      /   \    ------\     /   \
-     *     F     V   ------/    P     X
-     *         /   \          /   \
-     *        R     X        F     R
-     */
-    TreeNode* v_node = node->right_;
-    if (!v_node) {
-        throw std::runtime_error("RBTree LeftRotate Failed, with null V node");
-    }
-
-    TreeNode* r_node = v_node->left_;
-    TreeNode* parent = node->parent_;
-    node->right_ = r_node;
-
-    if (r_node) {
-        r_node->parent_ = node;
-    }
-
-    v_node->parent_ = parent;
-
-    if (!parent) {
-        BaseTreeType::root_ = v_node;
-    } else {
-        if (parent->left_ == node) {
-            parent->left_ = v_node;
-        } else {
-            parent->right_ = v_node;
-        }
-    }
-
-    v_node->left_ = node;
-    node->parent_ = v_node;
-}
-
-template<typename T>
-void RBTree<T>::RightRotate(TreeNode* node) {
-    /*      parent               parent
-     *        |                    |
-     *        P                    F
-     *      /   \    ------\     /   \
-     *     F     V   ------/    D     P
-     *   /   \                      /   \
-     *  D     K                    K     V
-     */
-    TreeNode* f_node = node->left_;
-    if (!f_node) {
-        throw std::runtime_error("RBTree LeftRotate Failed, with null F node");
-    }
-
-    TreeNode* k_node = f_node->right_;
-    TreeNode* parent = node->parent_;
-    node->left_ = k_node;
-
-    if (k_node) {
-        k_node->parent_ = node;
-    }
-
-    f_node->parent_ = parent;
-    if (!parent) {
-        BaseTreeType::root_ = f_node;
-    } else {
-        if (parent->left_ == node) {
-            parent->left_ = f_node;
-        } else {
-            parent->right_ = f_node;
-        }
-    }
-
-    f_node->right_ = node;
-    node->parent_ = f_node;
-}
-
-
-template<typename T>
 void RBTree<T>::InsertFixUp(TreeNode* node) {
     TreeNode *parent = node->parent_;
     if (parent == nullptr) {
@@ -658,14 +664,14 @@ void RBTree<T>::InsertFixUp(TreeNode* node) {
                 if (!is_left) {
                     // node is right child, parent is left
                     // left rotate parent
-                    LeftRotate(parent);
+                    LeftRotate(parent, &(BaseTreeType::root_));
                     has_rotate = true;
                 }
             } else {
                 if (is_left) {
                     // node is left child, parent is right
                     // right rotate parent
-                    RightRotate(parent);
+                    RightRotate(parent, &(BaseTreeType::root_));
                     has_rotate = true;
                 }
             }
@@ -680,9 +686,9 @@ void RBTree<T>::InsertFixUp(TreeNode* node) {
 
                 // rotate grand parent
                 if (parent_is_left) {
-                    RightRotate(grand_parent);
+                    RightRotate(grand_parent, &(BaseTreeType::root_));
                 } else {
-                    LeftRotate(grand_parent);
+                    LeftRotate(grand_parent, &(BaseTreeType::root_));
                 }
             }
         }
@@ -714,7 +720,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
             sibling->SetBlack();
             parent->SetRed();
 
-            LeftRotate(parent);
+            LeftRotate(parent, &(BaseTreeType::root_));
 
             DeleteFixUp(node, parent);
         } else {
@@ -731,7 +737,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
                 // Case 2.3: sibling node is black, its right child is black and left is red
                 sibling->left_->SetBlack();
                 sibling->SetRed();
-                RightRotate(sibling);
+                RightRotate(sibling, &(BaseTreeType::root_));
                 
                 DeleteFixUp(node, parent);
             } else {
@@ -744,7 +750,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
 
                 parent->SetBlack();
                 sibling->right_->SetBlack();
-                LeftRotate(parent);
+                LeftRotate(parent, &(BaseTreeType::root_));
 
                 return;
             }
@@ -756,7 +762,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
             sibling->SetBlack();
             parent->SetRed();
 
-            RightRotate(parent);
+            RightRotate(parent, &(BaseTreeType::root_));
 
             DeleteFixUp(node, parent);
         } else {
@@ -773,7 +779,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
                 // Case 2.3: sibling node is black, its left child is black and right is red
                 sibling->right_->SetBlack();
                 sibling->SetRed();
-                LeftRotate(sibling);
+                LeftRotate(sibling, &(BaseTreeType::root_));
                 
                 DeleteFixUp(node, parent);
             } else {
@@ -786,7 +792,7 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
 
                 parent->SetBlack();
                 sibling->left_->SetBlack();
-                RightRotate(parent);
+                RightRotate(parent, &(BaseTreeType::root_));
 
                 return;
             }
@@ -801,27 +807,29 @@ void RBTree<T>::DeleteFixUp(TreeNode* node, TreeNode *parent) {
 
 template<typename T>
 struct AVLTreeNode {
-    int left_height_;
-    int right_height_;
+    int height_;
 
     CREATE_BASE_TREETYPE_MEMBERS(AVLTreeNode);
 
-    AVLTreeNode(): left_height_(0), right_height_(0), data_(),
+    AVLTreeNode(): height_(0), data_(),
                   left_(nullptr), right_(nullptr),
                   parent_(nullptr) {}
-    AVLTreeNode(T data): left_height_(0), right_height_(0), data_(data),
+    AVLTreeNode(T data): height_(0), data_(data),
                         left_(nullptr), right_(nullptr),
                         parent_(nullptr) {}
-    AVLTreeNode(T data, int left_height, int right_height): left_height_(left_height),
-                        right_height_(right_height), data_(data),
+    AVLTreeNode(T data, int h): height_(h), data_(data),
                         left_(nullptr), right_(nullptr),
                         parent_(nullptr) {}
 
-    inline int GetLeftHeight() const { return left_height_; }
-    inline int GetRightHeight() const { return right_height_; }
-    inline void SetLeftHeight(int h) { left_height_ = h; }
-    inline void SetRightHeight(int h) { right_height_ = h; }
-    inline int GetBalanceFactor() const { return left_height_ - right_height_; }
+    inline int GetHeight() const { return height_; }
+    inline void SetHeight(int h) { height_ = h; }
+
+    inline int GetBalanceFactor() const {
+        int left_height = (left_ ? left_->height_ : 0);
+        int right_height = (right_ ? right_->height_ : 0);
+        return left_height - right_height;
+    }
+
     inline std::string ToString() const {
         return std::to_string(data_);
     }
@@ -843,21 +851,107 @@ class AVLTree final : public BinaryTreeBase<T, AVLTreeNode<T>> {
     TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
     bool DeleteRecursively(TreeNode* node, const T& target) override;
 
+    void InsertFixUp(TreeNode* node);
+    void DeleteFixUp(TreeNode* node);
+
 };
 
 template<typename T>
 bool AVLTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
+    if (!parent) {
+        parent = node;
+        return true;
+    }
+
+    if (*node < *parent) {
+        if (parent->left_) {
+            return InsertRecursively(parent->left_, node);
+        }
+
+        node->parent_ = parent;
+        parent->left_ = node;
+        return true;
+    } else if (*node > *parent) {
+        if (parent->right_) {
+            return InsertRecursively(parent->right_, node);
+        }
+
+        node->parent_ = parent;
+        parent->right_ = node;
+        return true;
+    }
     return false;
 }
 
 template<typename T>
 typename AVLTree<T>::TreeNode*
 AVLTree<T>::SearchRecursively(TreeNode* node, const T& target) const {
+    if (!node) return nullptr;
+    if (*node == target) return node;
+    else if (*node > target) {
+        return SearchRecursively(node->left_, target);
+    } else {
+        return SearchRecursively(node->right_, target);
+    }
+
     return nullptr;
 }
 
 template<typename T>
 bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
+    if (!node) return false;
+
+    if (*node > target) {
+        return DeleteRecursively(node->left_, target);
+    } else if (*node < target) {
+        return DeleteRecursively(node->right_, target);
+    } else {
+        TreeNode *parent = node->parent_;
+        bool is_root = (parent == nullptr);
+        bool is_left_child = (!is_root && (parent->left_ == node));
+
+        if (!node->left_ && !node->right_) {
+            delete node;
+            if (is_root) BaseTreeType::root_ = nullptr;
+            else {
+                if (is_left_child) parent->left_ = nullptr;
+                else parent->right_ = nullptr;
+            }
+
+        } else if (!node->right_) {
+            TreeNode *l_node = node->left_;
+            if (is_root) {
+                BaseTreeType::root_ = l_node;
+            } else {
+                if (is_left_child) parent->left_ = l_node;
+                else parent->right_ = l_node;
+            }
+            l_node->parent_ = parent;
+            delete node;
+
+        } else if (!node->left_) {
+            TreeNode *r_node = node->right_;
+            if (is_root) {
+                BaseTreeType::root_ = r_node;
+            } else {
+                if (is_left_child) parent->left_ = r_node;
+                else parent->right_ = r_node;
+            }
+            r_node->parent_ = parent;
+            delete node;
+
+        } else {
+            TreeNode *ino_prev = node->left_;
+            while (ino_prev->right_) {
+                ino_prev = ino_prev->right_;
+            }
+            node->data_ = ino_prev->data_;
+
+            return DeleteRecursively(ino_prev, ino_prev->data_);
+        }
+
+        return true;
+    }
     return false;
 }
 
