@@ -2,13 +2,13 @@ enable_testing()
 
 include_directories(.)
 add_executable(
-    test_bst
-    test_bst.cc
+    binary_tree_test 
+    binary_tree_test.cc
 )
 target_link_libraries(
-    test_bst
+    binary_tree_test
     GTest::gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(test_bst)
+gtest_discover_tests(binary_tree_test)

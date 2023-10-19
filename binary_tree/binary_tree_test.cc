@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include "bt.hpp"
+#include "binary_tree.hpp"
 
 class Timer {
 private:

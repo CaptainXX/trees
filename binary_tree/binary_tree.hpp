@@ -1058,15 +1058,7 @@ bool AVLTree<T>::CheckTreeBalanced(TreeNode* node) const {
         return false;
     }
 
-    if (!CheckTreeBalanced(node->left_)) {
-        return false;
-    }
-
-    if (!CheckTreeBalanced(node->right_)) {
-        return false;
-    }
-
-    return true;
+    return CheckTreeBalanced(node->left_) && CheckTreeBalanced(node->right_);
 }
 
 }  // namespace binary_tree
