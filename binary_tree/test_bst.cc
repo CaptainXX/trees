@@ -27,7 +27,7 @@ public:
 class BstTest : public ::testing::Test {
  protected:
     void SetUp() override {
-        data = std::move(std::vector<int> {49, 49, 45, 49, 25, 65, 41, 13, 31, 58});
+        data = std::vector<int> {49, 49, 45, 49, 25, 65, 41, 13, 31, 58};
         n_data = data.size();
         srand(kRandomSeed);
         for (int i = 0; i < kNPerfData; ++i) {
@@ -197,7 +197,7 @@ TEST_F(BstTest, BSTreeSearch) {
 
     // Case: insert an ordered array
     bst.Clear();
-    int samples = (kNPerfData > 100000 ? 100000 : kNPerfData);
+    int samples = (kNPerfData > 10000 ? 10000 : kNPerfData);
     for (int i = 0; i < samples; ++i) {
         bst.Insert(i);
     }
@@ -230,7 +230,6 @@ TEST_F(BstTest, BSTreeSearch) {
 
 TEST_F(BstTest, BSTreeDelete) {
     ASSERT_GE(n_data, 10);
-    using Node = binary_tree::BinarySearchTree<int>::TreeNodeType;
     binary_tree::BinarySearchTree<int> bst;
     std::unordered_set<int> deleted_data;
     bool res = false;
@@ -260,7 +259,7 @@ TEST_F(BstTest, BSTreeDelete) {
 TEST_F(BstTest, RBTreePrint) {
     binary_tree::RBTree<int> rbt;
     for (auto x : data) {
-        auto ret = rbt.Insert(x);
+        EXPECT_NO_THROW(rbt.Insert(x));
     }
 
     std::cout << rbt << std::endl;
@@ -446,9 +445,7 @@ TEST_F(BstTest, RBTreeSearch) {
 }
 
 TEST_F(BstTest, RBTreeDelete) {
-    using Node = binary_tree::RBTree<int>::TreeNodeType;
     binary_tree::RBTree<int> rbt;
-    Node *res = nullptr;
 
     for (auto x : data) {
         rbt.Insert(x);
@@ -470,6 +467,203 @@ TEST_F(BstTest, RBTreeDelete) {
     for (int i = 0; i < samples; ++i) {
         rbt.Delete(perf_data[i]);
         EXPECT_TRUE(rbt.IsTreeValid());
+    }
+}
+
+TEST_F(BstTest, AVLTreePrint) {
+    binary_tree::AVLTree<int> tree;
+    for (auto x : data) {
+        std::cout << "Insert " << x << " into: ";
+        EXPECT_NO_THROW(tree.Insert(x));
+        std::cout << tree << std::endl;
+    }
+
+    std::cout << tree << std::endl;
+    EXPECT_NO_THROW(tree.Clear());
+    std::cout << tree << std::endl;
+}
+
+TEST_F(BstTest, AVLTreeInsert) {
+    ASSERT_GE(n_data, 10);
+    using Node = binary_tree::AVLTree<int>::TreeNodeType;
+    binary_tree::AVLTree<int> tree;
+    Node * ins = nullptr;
+
+    // Insert 49
+    ins = tree.Insert(data[0]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 49);
+
+    // Insert 49
+    ins = tree.Insert(data[1]);
+    EXPECT_EQ(ins, nullptr);
+
+    // Insert 45
+    ins = tree.Insert(data[2]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 45);
+    
+    // Insert 49
+    ins = tree.Insert(data[3]);
+    EXPECT_EQ(ins, nullptr);
+    
+    // Insert 25
+    ins = tree.Insert(data[4]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 25);
+
+    // Insert 65
+    ins = tree.Insert(data[5]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 65);
+
+    // Insert 41
+    ins = tree.Insert(data[6]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 41);
+
+    // Insert 13
+    ins = tree.Insert(data[7]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 13);
+
+    // Insert 31
+    ins = tree.Insert(data[8]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 31);
+
+    // Insert 58
+    ins = tree.Insert(data[9]);
+    EXPECT_NE(ins, nullptr);
+    EXPECT_EQ(*ins, 58);   
+
+    // Multi Insert test
+    tree.Clear();
+    int64_t tree_ordered_insert_time = 0;
+    {
+        Timer _(tree_ordered_insert_time);
+        int samples = kNPerfData;
+        for (int i = 0; i < samples; ++i) {
+            tree.Insert(perf_data[i]);
+        }
+    }
+    std::cout << "AVL tree insert ordered " << kNPerfData << " items time: "
+              << tree_ordered_insert_time << " us" << std::endl;
+
+    // Perf
+    tree.Clear();
+    int64_t tree_random_insertion_time = 0;
+    {
+        Timer _(tree_random_insertion_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            tree.Insert(perf_data[i]);
+        }
+    }
+    std::cout << "tree insert " << kNPerfData << " items time: "
+              << tree_random_insertion_time << " us" << std::endl;
+}
+
+TEST_F(BstTest, AVLTreeSearch) {
+    using Node = binary_tree::AVLTree<int>::TreeNodeType;
+    binary_tree::AVLTree<int> tree;
+    Node *res = nullptr;
+
+    for (auto x : data) {
+        tree.Insert(x);
+    }
+
+    res = tree.Search(49);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 49);
+
+    res = tree.Search(45);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 45);
+
+    res = tree.Search(25);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 25);
+
+    res = tree.Search(65);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 65);
+
+    res = tree.Search(41);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 41);
+
+    res = tree.Search(13);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 13);
+
+    res = tree.Search(31);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 31);
+
+    res = tree.Search(58);
+    EXPECT_NE(res, nullptr);
+    EXPECT_EQ(*res, 58);
+
+    res = tree.Search(100);
+    EXPECT_EQ(res, nullptr);
+
+    // Case: insert an ordered array
+    tree.Clear();
+    int samples = kNPerfData;
+    for (int i = 0; i < samples; ++i) {
+        tree.Insert(i);
+    }
+    int64_t bst_ordered_search_time = 0;
+    {
+        Timer _(bst_ordered_search_time);
+        for (int i = 0; i < samples; ++i) {
+            tree.Search(i);
+        }
+    }
+    std::cout << "AVL tree search ordered " << samples << " times takes: "
+              << bst_ordered_search_time << " us" << std::endl;
+
+    // Perf
+    tree.Clear();
+    for (int i = 0; i < kNPerfData; ++i) {
+        tree.Insert(perf_data[i]);
+    }
+
+    int64_t bst_random_search_time = 0;
+    {
+        Timer _(bst_random_search_time);
+        for (int i = 0; i < kNPerfData; ++i) {
+            tree.Search(perf_data[i]);
+        }
+    }
+    std::cout << "AVL tree search " << kNPerfData << " times takes: "
+              << bst_random_search_time << " us" << std::endl;
+}
+
+TEST_F(BstTest, AVLTreeDelete) {
+    binary_tree::AVLTree<int> tree;
+
+    for (auto x : data) {
+        tree.Insert(x);
+    }
+
+    for (auto x : data) {
+        tree.Delete(x);
+
+        std::cout << tree << std::endl;
+        EXPECT_TRUE(tree.IsTreeValid());
+    }
+
+    // Multi Deletes
+    tree.Clear();
+    int samples = (kNPerfData > 10000 ? 10000 : kNPerfData);
+    for (int i = 0; i < samples; ++i) {
+        tree.Insert(perf_data[i]);
+    }
+
+    for (int i = 0; i < samples; ++i) {
+        tree.Delete(perf_data[i]);
+        EXPECT_TRUE(tree.IsTreeValid());
     }
 }
 

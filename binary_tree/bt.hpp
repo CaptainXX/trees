@@ -831,7 +831,7 @@ struct AVLTreeNode {
     }
 
     inline std::string ToString() const {
-        return std::to_string(data_);
+        return std::to_string(data_) + " " + std::to_string(height_);
     }
 
     CREATE_OPERATORS_FOR_TYPE(AVLTreeNode);
@@ -843,9 +843,11 @@ class AVLTree final : public BinaryTreeBase<T, AVLTreeNode<T>> {
     AVLTree() {}
     ~AVLTree() {}
 
+    bool IsTreeValid() const;
+
  protected:
-    using TreeNode = typename BinaryTreeBase<T>::TreeNodeType;
-    using BaseTreeType = BinaryTreeBase<T>;
+    using TreeNode = AVLTreeNode<T>;
+    using BaseTreeType = BinaryTreeBase<T, AVLTreeNode<T>>;
 
     bool InsertRecursively(TreeNode*& parent, TreeNode* node) override;
     TreeNode* SearchRecursively(TreeNode* node, const T& target) const override;
@@ -854,12 +856,21 @@ class AVLTree final : public BinaryTreeBase<T, AVLTreeNode<T>> {
     void InsertFixUp(TreeNode* node);
     void DeleteFixUp(TreeNode* node);
 
+    int GetNodeHeight(TreeNode* node) const;
+    bool CheckTreeBalanced(TreeNode* node) const;
+
 };
+
+template<typename T>
+bool AVLTree<T>::IsTreeValid() const {
+    return CheckTreeBalanced(BaseTreeType::root_);
+}
 
 template<typename T>
 bool AVLTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
     if (!parent) {
         parent = node;
+        node->height_ = 1;
         return true;
     }
 
@@ -870,6 +881,9 @@ bool AVLTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
         node->parent_ = parent;
         parent->left_ = node;
+        node->height_ = 1;
+
+        InsertFixUp(parent);
         return true;
     } else if (*node > *parent) {
         if (parent->right_) {
@@ -878,6 +892,9 @@ bool AVLTree<T>::InsertRecursively(TreeNode*& parent, TreeNode* node) {
 
         node->parent_ = parent;
         parent->right_ = node;
+        node->height_ = 1;
+
+        InsertFixUp(parent);
         return true;
     }
     return false;
@@ -918,6 +935,7 @@ bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
                 else parent->right_ = nullptr;
             }
 
+            DeleteFixUp(parent);
         } else if (!node->right_) {
             TreeNode *l_node = node->left_;
             if (is_root) {
@@ -929,6 +947,7 @@ bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             l_node->parent_ = parent;
             delete node;
 
+            DeleteFixUp(parent);
         } else if (!node->left_) {
             TreeNode *r_node = node->right_;
             if (is_root) {
@@ -940,6 +959,7 @@ bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
             r_node->parent_ = parent;
             delete node;
 
+            DeleteFixUp(parent);
         } else {
             TreeNode *ino_prev = node->left_;
             while (ino_prev->right_) {
@@ -953,6 +973,100 @@ bool AVLTree<T>::DeleteRecursively(TreeNode* node, const T& target) {
         return true;
     }
     return false;
+}
+
+template<typename T>
+void AVLTree<T>::InsertFixUp(TreeNode* node) {
+    if (!node) return;
+
+    int bf = node->GetBalanceFactor();
+    if (bf < -1) {
+        if (node->right_->GetBalanceFactor() >= 1) {
+            node->right_->height_--;
+
+            RightRotate(node->right_, &(BaseTreeType::root_));
+
+            node->right_->height_++;
+        }
+        LeftRotate(node, &(BaseTreeType::root_));
+    } else if (bf > 1) {
+        if (node->left_->GetBalanceFactor() <= -1) {
+            node->left_->height_--;
+
+            LeftRotate(node->left_, &(BaseTreeType::root_));
+
+            node->left_->height_++;
+        }
+        RightRotate(node, &(BaseTreeType::root_));
+    }
+
+    node->SetHeight(1 + std::max(
+        GetNodeHeight(node->left_), GetNodeHeight(node->right_)));
+
+    if (node->parent_) {
+        InsertFixUp(node->parent_);
+    }
+}
+
+template<typename T>
+void AVLTree<T>::DeleteFixUp(TreeNode* node) {
+    if (!node) return;
+
+    int bf = node->GetBalanceFactor();
+    if (bf < -1) {
+        if (node->right_->GetBalanceFactor() >= 1) {
+            node->right_->height_--;
+
+            RightRotate(node->right_, &(BaseTreeType::root_));
+
+            node->right_->height_++;
+        }
+        LeftRotate(node, &(BaseTreeType::root_));
+    } else if (bf > 1) {
+        if (node->left_->GetBalanceFactor() <= -1) {
+            node->left_->height_--;
+
+            LeftRotate(node->left_, &(BaseTreeType::root_));
+
+            node->left_->height_++;
+        }
+        RightRotate(node, &(BaseTreeType::root_));
+    }
+
+    node->SetHeight(1 + std::max(
+        GetNodeHeight(node->left_), GetNodeHeight(node->right_)));
+
+    if (node->parent_) {
+        DeleteFixUp(node->parent_);
+    }
+
+}
+
+template<typename T>
+int AVLTree<T>::GetNodeHeight(TreeNode* node) const {
+    if (!node) return 0;
+
+    return node->GetHeight();
+}
+
+template<typename T>
+bool AVLTree<T>::CheckTreeBalanced(TreeNode* node) const {
+    if (!node) return true;
+
+    int bf = node->GetBalanceFactor();
+    if (bf > 1 || bf < -1) {
+        return false;
+    }
+
+    if (!CheckTreeBalanced(node->left_)) {
+        return false;
+    }
+
+    if (!CheckTreeBalanced(node->right_)) {
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace binary_tree
